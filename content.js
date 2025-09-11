@@ -191,11 +191,14 @@ class ChatGPTTOC {
   }
 
   extractHeadings() {
-    // Find all assistant message containers
+    // Find all prompts and assistant message containers
+    const userPrompts = document.querySelectorAll('[data-message-author-role="user"]');
     const assistantMessages = document.querySelectorAll('[data-message-author-role="assistant"]');
     this.responseGroups = [];
-    
     assistantMessages.forEach((message, messageIndex) => {
+      const promptElement = messageIndex < userPrompts.length ? userPrompts[messageIndex] : null;
+      const promptText = promptElement ? promptElement.textContent.trim() : '';
+      const prompt = promptText.length > 50 ? promptText.substring(0, 200) + '...' : promptText;
       // Find headings within this specific message
       const headings = message.querySelectorAll('h1, h2, h3, h4, h5, h6');
       // Get a preview of the message content for the group title
@@ -204,7 +207,9 @@ class ChatGPTTOC {
       this.responseGroups.push({
         messageIndex: messageIndex,
         messageElement: message,
+        promptElement: promptElement,
         headings: Array.from(headings),
+        prompt: prompt,
         preview: preview
       });
     });
@@ -239,8 +244,8 @@ class ChatGPTTOC {
       tocHTML += `
         <div class="toc-group-header toc-group-header-clickable" data-group="${groupIndex}">
           <div class="toc-group-text">
-            <span class="toc-group-title">Response ${groupIndex + 1}</span>
-            <span class="toc-group-preview">${group.preview}</span>
+            <span class="toc-group-title">Prompt ${groupIndex + 1}</span>
+            <span class="toc-group-prompt">${group.prompt}</span>
           </div>
           <span class="toc-group-collapse-icon">${isGroupCollapsed ? this.rightArrowSVG : this.downArrowSVG}</span>
         </div>
@@ -329,7 +334,7 @@ class ChatGPTTOC {
 
   scrollToResponse(groupIndex) {
     if (this.responseGroups[groupIndex] && this.responseGroups[groupIndex].messageElement) {
-      const message = this.responseGroups[groupIndex].messageElement;
+      const message = this.responseGroups[groupIndex].promptElement ? this.responseGroups[groupIndex].promptElement : this.responseGroups[groupIndex].messageElement;
       message.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
